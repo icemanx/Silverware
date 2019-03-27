@@ -204,7 +204,7 @@
 	#endif
 #endif
 
-#define GYRO_LOW_PASS_FILTER 0
+#define GYRO_LOW_PASS_FILTER 3
 
 #define DISABLE_FLIP_SEQUENCER  //**************todo adapt into turtle mode
 #define STARTFLIP CHAN_OFF     //**************todo adapt into turtle mode

@@ -13,28 +13,31 @@
 //#define BWHOOP
 //#define E011
 //#define H8mini_blue_board
-#define Alienwhoop_ZERO  
+// #define Alienwhoop_ZERO  // requires defining RX_SBUS radio protocol
+#define HUMMINGBIRD
 
+#define USE_BEESIGN
 
+#define USE_VTX_LOCK_FREQ
 
 //**********************************************************************************************************************
 //***********************************************RATES & EXPO SETTINGS**************************************************
 
 // *************Select your preffered rate calculation format (define only one)
-#define SILVERWARE_RATES
-//#define BETAFLIGHT_RATES
+//#define SILVERWARE_RATES
+#define BETAFLIGHT_RATES
 
 #ifdef SILVERWARE_RATES
 // *************rate in deg/sec
 // *************for acro mode
-#define MAX_RATE 860.0          //Roll & Pitch axis
-#define MAX_RATEYAW 500.0       //Yaw axis (used in acro and leveling modes)
+#define MAX_RATE 900.0          //Roll & Pitch axis
+#define MAX_RATEYAW 600.0       //Yaw axis (used in acro and leveling modes)
 
 // *************EXPO from 0.00 to 1.00 , 0 = no exp
 // *************positive = less sensitive near center 
 #define ACRO_EXPO_ROLL 0.80
 #define ACRO_EXPO_PITCH 0.80
-#define ACRO_EXPO_YAW 0.60
+#define ACRO_EXPO_YAW 0.20     
 
 #define ANGLE_EXPO_ROLL 0.55
 #define ANGLE_EXPO_PITCH 0.0
@@ -44,10 +47,10 @@
 #ifdef BETAFLIGHT_RATES
 #define BF_RC_RATE_ROLL 1.00
 #define BF_RC_RATE_PITCH 1.00
-#define BF_RC_RATE_YAW 1.00
-#define BF_SUPER_RATE_ROLL 0.70
-#define BF_SUPER_RATE_PITCH 0.70
-#define BF_SUPER_RATE_YAW 0.70
+#define BF_RC_RATE_YAW 2.10
+#define BF_SUPER_RATE_ROLL 0.80
+#define BF_SUPER_RATE_PITCH 0.80
+#define BF_SUPER_RATE_YAW 0.1
 #define BF_EXPO_ROLL 0.00
 #define BF_EXPO_PITCH 0.00
 #define BF_EXPO_YAW 0.00
@@ -59,7 +62,7 @@
 #define LEVEL_MAX_ANGLE 65.0f
 
 // ************* low rates multiplier if rates are assigned to a channel
-#define LOW_RATES_MULTI 0.5f
+#define LOW_RATES_MULTI 1.0f
 
 // *************transmitter stick adjustable deadband for roll/pitch/yaw
 // *************.01f = 1% of stick range - comment out to disable
@@ -83,8 +86,8 @@
 
 // *************Transmitter Type Selection
 //#define USE_STOCK_TX
-//#define USE_DEVO
-#define USE_MULTI
+#define USE_DEVO
+//#define USE_MULTI
 
 // *******************************SWITCH SELECTION*****************************
 // *************CHAN_ON - on always ( all protocols)
@@ -101,14 +104,16 @@
 //*************channel is on, or racemodeHORIZON if both channels are on - and will be standard LEVELMODE if neither 
 //*************racemode or horizon are switched on.
 #define ARMING CHAN_5
-#define IDLE_UP CHAN_5
+#define IDLE_UP CHAN_ON
 #define IDLE_THR 0.05f                   //This designates an idle throttle of 5%
 #define LEVELMODE CHAN_6
 #define RACEMODE  CHAN_7
 #define HORIZON   CHAN_8
-#define PIDPROFILE CHAN_9                //For switching stickAccelerator & stickTransition profiles on pid.c page
+// #define PIDPROFILE CHAN_9                //For switching stickAccelerator & stickTransition profiles on pid.c page
+#define PIDPROFILE CHAN_OFF              // for frsky beeceiver with 9th channel indicating RSSI
 #define RATES CHAN_ON
-#define LEDS_ON CHAN_10
+#define LEDS_ON CHAN_OFF
+#define ALTITUDE_MODE CHAN_9
 
 // *************switch for fpv / other, requires fet
 // *************comment out to disable
@@ -152,8 +157,8 @@
 // *************flashes 2 times repeatedly at startup
 #define STOP_LOWBATTERY
 
-// *************voltage per cell to start warning led blinking
-#define VBATTLOW 3.5
+// *************voltage to start warning led blinking
+#define VBATTLOW 3.0
 
 // *************automatic voltage telemetry correction/calibration factor - change the values below if voltage telemetry is inaccurate
 // *************Corrects for an offset error in the telemetry measurement (same offset across the battery voltage range)
@@ -200,7 +205,7 @@
 
 
 
-//#define WEAK_FILTERING
+//#define WEAK_FILTERING    //PJC  Alienwhoop was on by default
 //#define STRONG_FILTERING
 //#define VERY_STRONG_FILTERING
 //#define ALIENWHOOP_ZERO_FILTERING
@@ -213,11 +218,11 @@
 //#define PT1_GYRO
 
 //Select Gyro Filter Cut Frequency
-#define GYRO_FILTER_PASS1 HZ_90
-#define GYRO_FILTER_PASS2 HZ_90
+//#define GYRO_FILTER_PASS1 HZ_300
+//#define GYRO_FILTER_PASS2 HZ_140
 
 //Select D Term Filter Cut Frequency *** Select Only one
-#define  DTERM_LPF_2ND_HZ 100
+#define  DTERM_LPF_2ND_HZ 300
 //#define DTERM_LPF_1ST_HZ 70
 
 //Select Motor Filter Type  (I am no longer using this)
@@ -236,7 +241,7 @@
 // *************pwm frequency for motor control
 // *************a higher frequency makes the motors more linear
 // *************in Hz
-#define PWMFREQ 32000
+#define PWMFREQ 40000   //PJC this was at 20000
 
 // *************clip feedforward attempts to resolve issues that occur near full throttle by adding any clipped motor commands to the next loop output
 //#define CLIP_FF
@@ -247,7 +252,7 @@
 // *************is very noise sensative so D term specifically has to be lowered and gyro/d filtering may need to be increased.
 // *************reccomendation right now is to leave boost at or below 2, drop your p gains a few points, then cut your D in half and 
 // *************retune it back up to where it feels good.  I'm finding about 60 to 65% of my previous D value seems to work.
-//#define TORQUE_BOOST 1.0
+#define TORQUE_BOOST 0.5    //PJC - turned on TB
 
 // *************makes throttle feel more poppy - can intensify small throttle imbalances visible in FPV if factor is set too high
 //#define THROTTLE_TRANSIENT_COMPENSATION 
@@ -373,6 +378,7 @@
 
 // debug things ( debug struct and other)
 //#define DEBUG
+
 
 
 
