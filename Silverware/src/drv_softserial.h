@@ -29,6 +29,8 @@ SOFTWARE.
 #include "defines.h"
 #include "drv_time.h"
 
+#define delay_until(delayClk)		systickDelay(delayClk)
+
 typedef struct SoftSerialData_s
 {
 	GPIO_TypeDef* tx_port;
@@ -48,10 +50,11 @@ void softserial_write_byte_ex(const SoftSerialData_t* data, uint8_t byte);
 void softserial_set_input(const SoftSerialData_t* data);
 void softserial_set_output(const SoftSerialData_t* data);
 
-inline void delay_until(uint32_t uS )
-{
-	while (gettime() < uS) ;
-}
+// inline void delay_until(uint32_t delaySysTick)
+// {
+// 	systickDelay(delaySysTick);
+// 	// while (gettime() < uS) ;
+// }
 
 
 #endif

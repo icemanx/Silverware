@@ -91,7 +91,7 @@ SoftSerialData_t softserial_init(GPIO_TypeDef* tx_port, uint16_t tx_pin, GPIO_Ty
 	softserial_init_rx(&globalSerialData);
 
 	globalSerialData.baud = baudrate;
-	globalSerialData.micros_per_bit = (uint32_t)(1000000/baudrate);
+	globalSerialData.micros_per_bit = (uint32_t)((SYS_CLOCK_FREQ_HZ/ 8) /baudrate - 5);	//	calcultae baudrate more than actual baudrate 5
 	globalSerialData.micros_per_bit_half = globalSerialData.micros_per_bit * .5;
 
 	return globalSerialData;
@@ -142,19 +142,19 @@ int softserial_read_byte_ex(const SoftSerialData_t* data, uint8_t* byte)
 	}
 	
 
-	time_next += data->micros_per_bit_half; // move away from edge to center of bit
-
+	time_next = data->micros_per_bit_half; // move away from edge to center of bit
+	delay_until(time_next);
 
 	for (; i < 8; ++i)
 	{
-		time_next += data->micros_per_bit;
+		time_next = data->micros_per_bit;
 		delay_until(time_next);
 		b >>= 1;
 		if (IS_RX_HIGH(data))
 			b |= 0x80;
 	}
 
-	time_next += data->micros_per_bit;
+	time_next = data->micros_per_bit;
 	delay_until(time_next); // move away from edge
 
 	if (!(IS_RX_HIGH(data))) // stop bit
@@ -181,25 +181,26 @@ void softserial_write_byte_ex(const SoftSerialData_t* data, uint8_t byte)
 	int i = 0;
 
 	START_BIT(data);
-	uint32_t next_time = gettime();
-
+	// uint32_t next_time;
+	delay_until(data->micros_per_bit);
 	for (; i < 8; ++i)
 	{
-		next_time += data->micros_per_bit;
-		delay_until(next_time);
+		//next_time = data->micros_per_bit;
+		
 
 		if ( 0x01 & byte )
 			SET_TX_HIGH(data);
 		else
 			SET_TX_LOW(data);
 		byte = byte >> 1;
+		delay_until(data->micros_per_bit);
 	}
-	next_time += data->micros_per_bit;
-	delay_until(next_time);
+	//next_time = data->micros_per_bit;
+	// delay_until(data->micros_per_bit);
 
 	STOP_BIT(data);
-	next_time += data->micros_per_bit;
-	delay_until(next_time);
+	//next_time = data->micros_per_bit;
+	delay_until(data->micros_per_bit);
 }
 
 
