@@ -38,16 +38,16 @@
 
 // i2c driver to use ( dummy - disables i2c )
 // hardware i2c used PB6 and 7 by default ( can also use PA9 and 10)
-//#define USE_HARDWARE_I2C
-#define USE_SOFTWARE_I2C
+#define USE_HARDWARE_I2C
+//#define USE_SOFTWARE_I2C
 //#define USE_DUMMY_I2C
 
 
 // I2C speed: fast = no delays 
 // slow1 = for i2c without pull-up resistors
 // slow2 = i2c failsafe speed
-#define SOFTI2C_SPEED_FAST
-//#define SOFTI2C_SPEED_SLOW1
+#define SOFTI2C_SPEED_FAST      // dps310 can't use fast soft i2c  
+//#define SOFTI2C_SPEED_SLOW1   
 //#define SOFTI2C_SPEED_SLOW2
 
 
@@ -148,3 +148,15 @@
 #define BUZZER_PIN_PORT  GPIOA
 // x (micro)seconds after loss of tx or low bat before buzzer starts
 #define BUZZER_DELAY     30e6 
+
+#define ENABLE_BARO
+
+// baro type
+#define USE_BARO_DPS310
+
+// baro I2C address
+#define DPS310_I2C_ADDRESS 0x76
+
+#define USE_BUTTON
+#define BUTTON_PIN       GPIO_Pin_8
+#define BUTTON_PIN_PORT  GPIOB
