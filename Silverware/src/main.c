@@ -50,6 +50,16 @@ THE SOFTWARE.
 #include "drv_fmc2.h"
 #include "gestures.h"
 #include "binary.h"
+#include "drv_dps310.h"
+#include "altitude.h"
+#include "barometer.h"
+#include "button.h"
+
+#if defined (USE_BEESIGN)
+#include "beesign.h"
+#include "stick_command.h"
+#include "menu.h"
+#endif
 
 #include <stdio.h>
 #include <math.h>
@@ -165,7 +175,22 @@ clk_init();
 #endif
 	
 	
-	delay(100000);
+	delay(1500000);
+
+#ifdef FLASH_SAVE1
+// read pid identifier for values in file pid.c
+    flash_hard_coded_pid_identifier();
+
+// load flash saved variables
+    flash_load( );
+#endif
+
+#ifdef FLASH_SAVE2
+// read accelerometer calibration values from option bytes ( 2* 8bit)
+extern float accelcal[3];
+ accelcal[0] = flash2_readdata( OB->DATA0 ) - 127;
+ accelcal[1] = flash2_readdata( OB->DATA1 ) - 127;
+#endif
 		
 	i2c_init();	
 	
@@ -176,46 +201,7 @@ clk_init();
 	pwm_set( MOTOR_FR , 0); 
 	pwm_set( MOTOR_BR , 0); 
 
-
-	sixaxis_init();
-	
-	if ( sixaxis_check() ) 
-	{
-		
-	}
-	else 
-	{
-        //gyro not found   
-		failloop(4);
-	}
-	
 	adc_init();
-//set always on channel to on
-aux[CH_ON] = 1;	
-	
-#ifdef AUX1_START_ON
-aux[CH_AUX1] = 1;
-#endif
-    
-    
- #ifdef FLASH_SAVE1
-// read pid identifier for values in file pid.c
-    flash_hard_coded_pid_identifier();
-
-// load flash saved variables
-    flash_load( );
-#endif
-
-
-#ifdef USE_ANALOG_AUX
-  // saves initial pid values - after flash loading
-  pid_init();
-#endif
-
-
-	rx_init();
-
-	
 int count = 0;
 	
 while ( count < 5000 )
@@ -240,12 +226,69 @@ for ( int i = 6 ; i > 0 ; i--)
 		lipo_cell_count = (float)LIPO_CELL_COUNT;
 #endif
 	
+
+#if defined (USE_BEESIGN)
+buttonInit();
+beesignInit();
+menuInit();
+#endif
+	sixaxis_init();
+	
+	if ( sixaxis_check() ) 
+	{
+		
+	}
+	else 
+	{
+        //gyro not found   
+		failloop(4);
+	}
+
+#ifdef ENABLE_BARO
+    barometer_init();
+
+    if (barometer_check())
+    {
+    }
+    else
+    {
+        //barometer not found
+        failloop(3);
+    }
+
+	if (altitude_check())
+    {
+    }
+    else
+    {
+        //altitude check error
+        failloop(6);
+    }
+#endif
+
+//set always on channel to on
+aux[CH_ON] = 1;	
+	
+#ifdef AUX1_START_ON
+aux[CH_AUX1] = 1;
+#endif
+    
+
+#ifdef USE_ANALOG_AUX
+  // saves initial pid values - after flash loading
+  pid_init();
+#endif
+
+
+	rx_init();
+
+
 #ifdef RX_BAYANG_BLE_APP
    // for randomising MAC adddress of ble app - this will make the int = raw float value        
     random_seed =  *(int *)&vbattfilt ; 
     random_seed = random_seed&0xff;
 #endif
-	
+
 #ifdef STOP_LOWBATTERY
 // infinite loop
 if ( vbattfilt/lipo_cell_count < 3.3f) failloop(2);
@@ -254,6 +297,9 @@ if ( vbattfilt/lipo_cell_count < 3.3f) failloop(2);
 
 
 	gyro_cal();
+#ifdef ENABLE_BARO
+    altitude_cal();
+#endif
 
 extern void rgb_init( void);
 rgb_init();
@@ -266,12 +312,6 @@ serial_init();
 
 imu_init();
 
-#ifdef FLASH_SAVE2
-// read accelerometer calibration values from option bytes ( 2* 8bit)
-extern float accelcal[3];
- accelcal[0] = flash2_readdata( OB->DATA0 ) - 127;
- accelcal[1] = flash2_readdata( OB->DATA1 ) - 127;
-#endif
 				   
 
 extern int liberror;
@@ -302,7 +342,7 @@ if ( liberror )
 		looptime = ((uint32_t)( time - lastlooptime));
 		if ( looptime <= 0 ) looptime = 1;
 		looptime = looptime * 1e-6f;
-		if ( looptime > 0.02f ) // max loop 20ms
+		if ( looptime > 0.03f ) // max loop 20ms
 		{
 			failloop( 6);	
 			//endless loop			
@@ -323,6 +363,10 @@ if ( liberror )
         // read gyro and accelerometer data	
 		sixaxis_read();
 		
+#ifdef ENABLE_BARO
+        // read the altitude
+        altitude_read();
+#endif
         // all flight calculations and motors
 		control();
 
@@ -560,6 +604,15 @@ rgb_dma_start();
 // receiver function
 checkrx();
 
+#if defined (USE_BUTTON)
+buttonTask();
+#endif
+
+#if defined (USE_BEESIGN)
+stickCommandTask();
+beesignTask();
+menuTask();
+#endif
 
 #ifdef DEBUG
 	debug.cpu_load = (gettime() - lastlooptime )*1e-3f;
