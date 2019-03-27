@@ -102,6 +102,23 @@ void delay(uint32_t data)
 }
 #endif
 
+void systickDelay(uint32_t delaySysTick) {
+	unsigned long delayMaxTicks = SysTick->LOAD;	
+	unsigned long delayTicksStart = SysTick->VAL;		
+	unsigned long delayElapsedTicks = 0;	
+	while ((int32_t)delaySysTick - (int32_t)delayElapsedTicks > 0){
+		if (SysTick->VAL < delayTicksStart) 
+		{
+			delayElapsedTicks = delayTicksStart - SysTick->VAL;	
+		}
+		else
+		{
+			// overflow ( underflow really)
+			delayElapsedTicks = delayTicksStart + ( delayMaxTicks - SysTick->VAL);			
+		}
+	}
+}
+
 void SysTick_Handler(void)
 {
 
