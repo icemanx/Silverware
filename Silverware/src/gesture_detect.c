@@ -3,6 +3,12 @@
 #include "drv_time.h"
 #include "gestures.h"
 #include "defines.h"
+#include "config.h"
+
+#ifdef USE_BEESIGN
+#include "menu.h"
+#include "stdio.h"
+#endif
 
 #define STICKMAX 0.7f
 #define STICKCENTER 0.2f
@@ -110,7 +116,11 @@ extern float rx[];
 
 int gestures2()
 {
-	if (onground)
+	if (onground 
+#ifdef USE_BEESIGN 
+    && (currentMenu.menu == NULL)
+#endif
+    )
 	  {
 		  if (GMACRO_XCENTER && GMACRO_PITCHCENTER)
 		    {
