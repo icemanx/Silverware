@@ -32,6 +32,7 @@ THE SOFTWARE.
 #include "defines.h"
 #include "rx_bayang.h"
 #include "util.h"
+#include "stick_command.h"
 
 
 #define RX_MODE_NORMAL RXMODE_NORMAL
@@ -73,12 +74,13 @@ char rfchannel[4];
 char rxaddress[5];
 int telemetry_enabled = 0;
 int rx_bind_enable = 0;
-int rx_bind_load = 0;
+int rx_bind_load = 1;
 
 int rxmode = 0;
 int rf_chan = 0;
 int rx_ready = 0;
 int bind_safety = 0;
+int rx_rssi = 0;
 
 unsigned long autobindtime = 0;
 int autobind_inhibit = 0;
@@ -394,6 +396,7 @@ float bytetodata(int byte)
 }
 
 
+int channels[9];
 static int decodepacket(void)
 {
     if (rxdata[0] == 165)
@@ -405,6 +408,11 @@ static int decodepacket(void)
             }
           if ((sum & 0xFF) == rxdata[14])
             {
+                channels[0] = ((rxdata[4] & 0x0003) << 8)+ rxdata[5];
+                channels[1] = ((rxdata[6] & 0x0003) << 8) + rxdata[7];
+                channels[2] = ((rxdata[8] & 0x0003) << 8) + rxdata[9];
+                channels[3] = ((rxdata[10] & 0x0003) << 8) + rxdata[11];
+               
                 rx[0] = packettodata(&rxdata[4]);
                 rx[1] = packettodata(&rxdata[6]);
                 rx[2] = packettodata(&rxdata[10]);
@@ -417,6 +425,28 @@ static int decodepacket(void)
 
 
 
+
+
+
+                      
+#ifdef USE_BEESIGN
+#ifdef USE_STOCK_TX
+#else
+                aux[0] = (rxdata[3] & 0x80) ? 2 : 0;   // inverted flag
+                aux[1] = (rxdata[2] & 0x08) ? 2 : 0;
+                aux[2] = (rxdata[2] & 0x20) ? 2 : 0;
+                aux[3] = (rxdata[2] & 0x10) ? 2 : 0;
+                aux[4] = (rxdata[2] & 0x02) ? 2 : 0;
+                aux[5] = (rxdata[2] & 0x01) ? 2 : 0;
+                aux[6] = (rxdata[3] & 0x20) ? 2 : 0;   // take off flag
+                aux[7] = (rxdata[3] & 0x04) ? 2 : 0;   // emg stop flag
+                channels[4] = aux[0];
+                channels[5] = aux[1];
+                channels[6] = aux[2];
+                channels[7] = aux[3];
+#endif
+    
+#else
 #ifdef USE_STOCK_TX
                 char trims[4];
                 trims[0] = rxdata[6] >> 2;
@@ -439,7 +469,6 @@ static int decodepacket(void)
                 aux[CH_TO] = (rxdata[3] & 0x20) ? 1 : 0;   // take off flag
                       
                 aux[CH_EMG] = (rxdata[3] & 0x04) ? 1 : 0;   // emg stop flag
-                      
                 aux[CH_FLIP] = (rxdata[2] & 0x08) ? 1 : 0;
 
 #ifdef USE_ANALOG_AUX
@@ -451,6 +480,8 @@ static int decodepacket(void)
                 aux[CH_HEADFREE] = (rxdata[2] & 0x02) ? 1 : 0;
 
                 aux[CH_RTH] = (rxdata[2] & 0x01) ? 1 : 0;   // rth channel
+                
+#endif
 
 #ifdef USE_ANALOG_AUX
                 // Assign all analog versions of channels based on boolean channel data
@@ -469,12 +500,21 @@ static int decodepacket(void)
                 }
 #endif
 
+							#ifdef USE_BEESIGN
+                            if (getAuxCommand(rcCmdLevel)){
+                                if (getAuxCommand(rcCmdRace) && !getAuxCommand(rcCmdHorizon)) {
+                            #else
 							if (aux[LEVELMODE]){
 								if (aux[RACEMODE] && !aux[HORIZON]){
+                            #endif // #ifdef USE_BEESIGN
 									if ( ANGLE_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ANGLE_EXPO_ROLL);
 									if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
 									if ( ANGLE_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ANGLE_EXPO_YAW);
+							#ifdef USE_BEESIGN
+                                }else if (getAuxCommand(rcCmdHorizon)) {
+                            #else
 								}else if (aux[HORIZON]){
+                            #endif // #ifdef USE_BEESIGN
 									if ( ANGLE_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ACRO_EXPO_ROLL);
 									if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
 									if ( ANGLE_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ANGLE_EXPO_YAW);
@@ -487,6 +527,7 @@ static int decodepacket(void)
 								if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
 								if ( ACRO_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ACRO_EXPO_YAW);
 							}
+
 
                 for (int i = 0; i < AUXNUMBER - 2; i++)
                   {
@@ -529,6 +570,14 @@ int timingfail = 0;
 
 void checkrx(void)
 {
+    if (GPIO_ReadInputDataBit(BUTTON_PIN_PORT, BUTTON_PIN) && (failsafe == 1)) {
+        rx_ready = 0;
+        bind_safety = 0;
+        rxmode = RXMODE_BIND; 
+        failsafe = 1;
+        rx_bind_load = 0;
+        rx_init();
+    }
     int packetreceived = checkpacket();
     int pass = 0;
     if (packetreceived)
@@ -574,6 +623,9 @@ void checkrx(void)
                       xn_writereg(0x25, rfchannel[rf_chan]);    // Set channel frequency 
 											
                       rxmode = RX_MODE_NORMAL;
+                      rx_bind_enable = 1;
+                      extern void flash_save(void);
+                      flash_save();
 											 
 
 #ifdef SERIAL
