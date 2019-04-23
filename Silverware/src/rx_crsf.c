@@ -7,6 +7,10 @@
 #include "util.h"
 #include "drv_fmc.h"
 
+#if defined (USE_BEESIGN)
+#include "stick_command.h"
+#endif
+
 #ifdef RX_CRSF
 
 // global use rx variables
@@ -22,6 +26,7 @@ int rxmode = 0;
 int rx_ready = 0;
 int bind_safety = 0;
 int rx_bind_enable = 0;
+int rx_rssi = 0;
 
 
 /*
@@ -67,7 +72,7 @@ int rx_bind_enable = 0;
 
 
 int crsfFrameDone = 0;
-uint32_t crsfChannelData[CRSF_MAX_CHANNEL];
+uint32_t channels[CRSF_MAX_CHANNEL];
 int rx_frame_pending;
 int rx_frame_pending_last;
 uint32_t flagged_time;
@@ -237,22 +242,22 @@ void crsfFrameStatus(void)
             }else{   
             // unpack the RC channels
             const crsfPayloadRcChannelsPacked_t* const rcChannels = (crsfPayloadRcChannelsPacked_t*)&crsfFrame.frame.payload;
-            crsfChannelData[0] = rcChannels->chan0;
-            crsfChannelData[1] = rcChannels->chan1;
-            crsfChannelData[2] = rcChannels->chan2;
-            crsfChannelData[3] = rcChannels->chan3;
-            crsfChannelData[4] = rcChannels->chan4;
-            crsfChannelData[5] = rcChannels->chan5;
-            crsfChannelData[6] = rcChannels->chan6;
-            crsfChannelData[7] = rcChannels->chan7;
-            crsfChannelData[8] = rcChannels->chan8;
-            crsfChannelData[9] = rcChannels->chan9;
-            crsfChannelData[10] = rcChannels->chan10;
-            crsfChannelData[11] = rcChannels->chan11;
-            crsfChannelData[12] = rcChannels->chan12;
-            crsfChannelData[13] = rcChannels->chan13;
-            crsfChannelData[14] = rcChannels->chan14;
-            crsfChannelData[15] = rcChannels->chan15;
+            channels[0] = rcChannels->chan0;
+            channels[1] = rcChannels->chan1;
+            channels[2] = rcChannels->chan2;
+            channels[3] = rcChannels->chan3;
+            channels[4] = rcChannels->chan4;
+            channels[5] = rcChannels->chan5;
+            channels[6] = rcChannels->chan6;
+            channels[7] = rcChannels->chan7;
+            channels[8] = rcChannels->chan8;
+            channels[9] = rcChannels->chan9;
+            channels[10] = rcChannels->chan10;
+            channels[11] = rcChannels->chan11;
+            channels[12] = rcChannels->chan12;
+            channels[13] = rcChannels->chan13;
+            channels[14] = rcChannels->chan14;
+            channels[15] = rcChannels->chan15;
 						  	framestarted = 1;											
 								rx_frame_pending = 0;                    //flags when last time through we didn't have a frame and this time we do	
 				        bind_safety++;}                          // incriments up as good frames come in till we pass a safe point where aux channels are updated 
@@ -286,7 +291,7 @@ void crsf_init(void)
     USART_InitStructure.USART_Mode = USART_Mode_Rx | USART_Mode_Tx;
     USART_Init(USART1, &USART_InitStructure);
 // swap rx/tx pins
-#ifndef Alienwhoop_ZERO
+#ifndef USART1_DONT_SWAP
     USART_SWAPPinCmd( USART1, ENABLE);
 #endif
     USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
@@ -336,50 +341,67 @@ if ( framestarted == 1){
 				if ((bind_safety < 900) && (bind_safety > 0)) rxmode = RXMODE_BIND;		// normal rx mode - removes waiting for bind led leaving failsafe flashes as data starts to come in
 		   
       // AETR channel order																											
-			  rx[0] = (crsfChannelData[0] - 990.5f) * 0.00125707103f;  
-        rx[1] = (crsfChannelData[1] - 990.5f) * 0.00125707103f; 
-        rx[2] = (crsfChannelData[3] - 990.5f) * 0.00125707103f;
-        rx[3] = (crsfChannelData[2] - 191.0f) * 0.00062853551f;
+			  rx[0] = (channels[0] - 990.5f) * 0.00125707103f;  
+        rx[1] = (channels[1] - 990.5f) * 0.00125707103f; 
+        rx[2] = (channels[3] - 990.5f) * 0.00125707103f;
+        rx[3] = (channels[2] - 191.0f) * 0.00062853551f;
 	
 				if ( rx[3] > 1 ) rx[3] = 1;	
 				if ( rx[3] < 0 ) rx[3] = 0;
 
 				
-				if (aux[LEVELMODE]){
-							if (aux[RACEMODE] && !aux[HORIZON]){
+ #ifdef USE_BEESIGN
+                            if (getAuxCommand(rcCmdLevel)){
+                                if (getAuxCommand(rcCmdRace) && !getAuxCommand(rcCmdHorizon)) {
+                            #else
+							if (aux[LEVELMODE]){
+								if (aux[RACEMODE] && !aux[HORIZON]){
+                            #endif // #ifdef USE_BEESIGN
 									if ( ANGLE_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ANGLE_EXPO_ROLL);
 									if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
 									if ( ANGLE_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ANGLE_EXPO_YAW);
-							}else if (aux[HORIZON]){
+							#ifdef USE_BEESIGN
+                                }else if (getAuxCommand(rcCmdHorizon)) {
+                            #else
+								}else if (aux[HORIZON]){
+                            #endif // #ifdef USE_BEESIGN
 									if ( ANGLE_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ACRO_EXPO_ROLL);
 									if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
 									if ( ANGLE_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ANGLE_EXPO_YAW);
-							}else{
+								}else{
 									if ( ANGLE_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ANGLE_EXPO_ROLL);
 									if ( ANGLE_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ANGLE_EXPO_PITCH);
 									if ( ANGLE_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ANGLE_EXPO_YAW);}
-				}else{
-						if ( ACRO_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ACRO_EXPO_ROLL);
-						if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
-						if ( ACRO_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ACRO_EXPO_YAW);
-				}
+							}else{
+								if ( ACRO_EXPO_ROLL > 0.01) rx[0] = rcexpo(rx[0], ACRO_EXPO_ROLL);
+								if ( ACRO_EXPO_PITCH > 0.01) rx[1] = rcexpo(rx[1], ACRO_EXPO_PITCH);
+								if ( ACRO_EXPO_YAW > 0.01) rx[2] = rcexpo(rx[2], ACRO_EXPO_YAW);
+							}
 							
-	
-				aux[CHAN_5] = (crsfChannelData[4] > 1100) ? 1 : 0;													//1100 cutoff intentionally selected to force aux channels low if 
-				aux[CHAN_6] = (crsfChannelData[5] > 1100) ? 1 : 0;													//being controlled by a transmitter using a 3 pos switch in center state
-				aux[CHAN_7] = (crsfChannelData[6] > 1100) ? 1 : 0;
-				aux[CHAN_8] = (crsfChannelData[7] > 1100) ? 1 : 0;
-				aux[CHAN_9] = (crsfChannelData[8] > 1100) ? 1 : 0;
-				aux[CHAN_10] = (crsfChannelData[9] > 1100) ? 1 : 0;							
+#if defined (USE_BEESIGN)			
+			aux[0] = (channels[4] > 1400) ? 2 :(channels[4] > 700) ? 1 : 0;
+		    aux[1] = (channels[5] > 1400) ? 2 :(channels[5] > 700) ? 1 : 0;
+		    aux[2] = (channels[6] > 1400) ? 2 :(channels[6] > 700) ? 1 : 0;
+		    aux[3] = (channels[7] > 1400) ? 2 :(channels[7] > 700) ? 1 : 0;
+            rx_rssi = channels[8] / 17.92;
+#else 
+            aux[CHAN_5] = (channels[4] > 1100) ? 1 : 0;													//1100 cutoff intentionally selected to force aux channels low if 
+            aux[CHAN_6] = (channels[5] > 1100) ? 1 : 0;													//being controlled by a transmitter using a 3 pos switch in center state
+            aux[CHAN_7] = (channels[6] > 1100) ? 1 : 0;
+            aux[CHAN_8] = (channels[7] > 1100) ? 1 : 0;
+            aux[CHAN_9] = (channels[8] > 1100) ? 1 : 0;
+            aux[CHAN_10] = (channels[9] > 1100) ? 1 : 0;	
+#endif
+										
 
 #ifdef USE_ANALOG_AUX
         // Map to range 0 to 1
-				aux_analog[CHAN_5] = (crsfChannelData[4] - 990.5f) * 0.00125707103f;
-				aux_analog[CHAN_6] = (crsfChannelData[5] - 990.5f) * 0.00125707103f;
-				aux_analog[CHAN_7] = (crsfChannelData[6] - 990.5f) * 0.00125707103f;
-				aux_analog[CHAN_8] = (crsfChannelData[7] - 990.5f) * 0.00125707103f;
-				aux_analog[CHAN_9] = (crsfChannelData[8] - 990.5f) * 0.00125707103f;
-				aux_analog[CHAN_10] = (crsfChannelData[9] - 990.5f) * 0.00125707103f;
+				aux_analog[CHAN_5] = (channels[4] - 990.5f) * 0.00125707103f;
+				aux_analog[CHAN_6] = (channels[5] - 990.5f) * 0.00125707103f;
+				aux_analog[CHAN_7] = (channels[6] - 990.5f) * 0.00125707103f;
+				aux_analog[CHAN_8] = (channels[7] - 990.5f) * 0.00125707103f;
+				aux_analog[CHAN_9] = (channels[8] - 990.5f) * 0.00125707103f;
+				aux_analog[CHAN_10] = (channels[9] - 990.5f) * 0.00125707103f;
 
 				aux_analogchange[CHAN_5] = (aux_analog[CHAN_5] != lastaux_analog[CHAN_5]) ? 1 : 0;
 				aux_analogchange[CHAN_6] = (aux_analog[CHAN_6] != lastaux_analog[CHAN_6]) ? 1 : 0;
@@ -409,6 +431,10 @@ if ( framestarted == 1){
 
 						
 	}
+
+    if (failsafe) {
+        rx_rssi = 0;
+    }
 }	
 	#endif
 
