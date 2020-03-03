@@ -66,9 +66,9 @@ float stickTransitionProfileB[3]  = { 0.0 , 0.0 , 0.0};           //keep values 
 
 //Hummingbird 6mm Gold Motor PIDs with 4 blade Gemfan Props - Set BETA_FILTERING
 //                         ROLL       PITCH     YAW
-float pidkp[PIDNUMBER] = {21.0e-2 , 21.0e-2  , 10.0e-1 }; 
-float pidki[PIDNUMBER] = { 12e-1  , 12e-1 , 12e-1 };	
-float pidkd[PIDNUMBER] = { 7.9e-1 , 7.9e-1  , 5.5e-1 };
+float pidkp[PIDNUMBER] = {21.5e-2 , 21.5e-2  , 10.5e-1 }; 
+float pidki[PIDNUMBER] = { 14e-1  , 15e-1 , 15e-1 };	
+float pidkd[PIDNUMBER] = { 7.4e-1 , 7.4e-1  , 5.5e-1 };
 
 //6mm & 7mm Abduction Pids for whoops (Team Alienwhoop)- set filtering ALIENWHOOP_ZERO_FILTERING
 //                         ROLL       PITCH     YAW

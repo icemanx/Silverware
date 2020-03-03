@@ -176,8 +176,10 @@ float rate_multiplier = 1.0;
 	{
 		#ifdef STOCK_TX_AUTOCENTER
 		rxcopy[i] = (rx[i] - autocenter[i]);
+		limitf(&rxcopy[i], 1.0);
 		#else
 		rxcopy[i] = rx[i];
+		limitf(&rxcopy[i], 1.0);
 		#endif
 		#ifdef STICKS_DEADBAND
 		if ( fabsf( rxcopy[ i ] ) <= STICKS_DEADBAND ) {
@@ -757,7 +759,7 @@ else
          static int mixScaling;
          if (onground) mixScaling = 0;
          // only enable once really in the air
-         else if (in_air) mixScaling = 1;
+         else mixScaling = in_air;
          if (mixScaling) {
 						 //ledcommand=1;
              float minMix = 1000.0f;

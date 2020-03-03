@@ -30,14 +30,14 @@
 #ifdef SILVERWARE_RATES
 // *************rate in deg/sec
 // *************for acro mode
-#define MAX_RATE 900.0          //Roll & Pitch axis
-#define MAX_RATEYAW 600.0       //Yaw axis (used in acro and leveling modes)
+#define MAX_RATE 860.0          //Roll & Pitch axis
+#define MAX_RATEYAW 500.0       //Yaw axis (used in acro and leveling modes)
 
 // *************EXPO from 0.00 to 1.00 , 0 = no exp
 // *************positive = less sensitive near center 
 #define ACRO_EXPO_ROLL 0.80
 #define ACRO_EXPO_PITCH 0.80
-#define ACRO_EXPO_YAW 0.20     
+#define ACRO_EXPO_YAW 0.60     
 
 #define ANGLE_EXPO_ROLL 0.55
 #define ANGLE_EXPO_PITCH 0.0
@@ -47,13 +47,13 @@
 #ifdef BETAFLIGHT_RATES
 #define BF_RC_RATE_ROLL 1.00
 #define BF_RC_RATE_PITCH 1.00
-#define BF_RC_RATE_YAW 2.10
-#define BF_SUPER_RATE_ROLL 0.80
-#define BF_SUPER_RATE_PITCH 0.80
-#define BF_SUPER_RATE_YAW 0.1
-#define BF_EXPO_ROLL 0.00
-#define BF_EXPO_PITCH 0.00
-#define BF_EXPO_YAW 0.00
+#define BF_RC_RATE_YAW 1.50
+#define BF_SUPER_RATE_ROLL 0.73
+#define BF_SUPER_RATE_PITCH 0.73
+#define BF_SUPER_RATE_YAW 0.73
+#define BF_EXPO_ROLL 0.15
+#define BF_EXPO_PITCH 0.15
+#define BF_EXPO_YAW 0.15
 #endif
 
 
@@ -62,7 +62,7 @@
 #define LEVEL_MAX_ANGLE 65.0f
 
 // ************* low rates multiplier if rates are assigned to a channel
-#define LOW_RATES_MULTI 1.0f
+#define LOW_RATES_MULTI 0.5f
 
 // *************transmitter stick adjustable deadband for roll/pitch/yaw
 // *************.01f = 1% of stick range - comment out to disable
@@ -203,7 +203,7 @@
 // *************  FINAL NOTE: If you want to try running only one gyro pass, you can comment out either pass one or pass two.  Next revision will have split 1st order D term filter 
 // *************  passes just like the gyro in place of 2nd order filtering.      Thanks - NFE
 
-
+#define ACCELEROMETER_DRIFT_FIX
 
 //#define WEAK_FILTERING    //PJC  Alienwhoop was on by default
 //#define STRONG_FILTERING
@@ -218,11 +218,11 @@
 //#define PT1_GYRO
 
 //Select Gyro Filter Cut Frequency
-//#define GYRO_FILTER_PASS1 HZ_300
-//#define GYRO_FILTER_PASS2 HZ_140
+#define GYRO_FILTER_PASS1 HZ_80
+//#define GYRO_FILTER_PASS2 HZ_10
 
 //Select D Term Filter Cut Frequency *** Select Only one
-#define  DTERM_LPF_2ND_HZ 300
+#define  DTERM_LPF_2ND_HZ 100
 //#define DTERM_LPF_1ST_HZ 70
 
 //Select Motor Filter Type  (I am no longer using this)
@@ -255,8 +255,8 @@
 #define TORQUE_BOOST 0.5    //PJC - turned on TB
 
 // *************makes throttle feel more poppy - can intensify small throttle imbalances visible in FPV if factor is set too high
-//#define THROTTLE_TRANSIENT_COMPENSATION 
-//#define THROTTLE_TRANSIENT_COMPENSATION_FACTOR 4.0 
+#define THROTTLE_TRANSIENT_COMPENSATION 
+#define THROTTLE_TRANSIENT_COMPENSATION_FACTOR 6.0 
  
 // *************throttle angle compensation in level mode
 //#define AUTO_THROTTLE
